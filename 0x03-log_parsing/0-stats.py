@@ -1,56 +1,45 @@
 #!/usr/bin/python3
+"""
+Log Parsing Script
+"""
+
 import sys
-import signal
 
-total_size = 0
-status_codes_count = {200: 0, 301: 0, 400: 0,
-                      401: 0, 403: 0, 404: 0, 405: 0, 500: 0}
-valid_codes = set(status_codes_count.keys())
-line_count = 0
+if __name__ == "__main__":
 
+    total_size = 0
+    line_count = 0
+    status_codes = ["200", "301", "400", "401", "403", "404", "405", "500"]
+    log_stats = {code: 0 for code in status_codes}
 
-def print_statistics():
-    """Print the accumulated statistics"""
-    print(f"File size: {total_size}")
-    for code in sorted(status_codes_count.keys()):
-        if status_codes_count[code] > 0:
-            print(f"{code}: {status_codes_count[code]}")
+    def display_stats(stats, size):
+        print(f"File size: {size}")
+        for code, count in sorted(stats.items()):
+            if count > 0:
+                print(f"{code}: {count}")
 
-
-def signal_handler(sig, frame):
-    """Handle the SIGINT signal to print statistics and exit"""
-    print_statistics()
-    sys.exit(0)
-
-
-signal.signal(signal.SIGINT, signal_handler)
-
-for line in sys.stdin:
     try:
-        parts = line.split()
-        if len(parts) != 9:
-            continue
-        ip, dash, date, get_request, http_version, status_code, file_size = (
-            parts[0], parts[1], parts[2], parts[3],
-            parts[4], parts[6], parts[8]
-        )
+        for line in sys.stdin:
+            line_count += 1
+            parts = line.split()
 
-        if get_request != "\"GET" or http_version != "HTTP/1.1\"":
-            continue
+            try:
+                status = parts[-2]
+                if status in log_stats:
+                    log_stats[status] += 1
+            except Exception:
+                pass
 
-        status_code = int(status_code)
-        file_size = int(file_size)
+            try:
+                total_size += int(parts[-1])
+            except Exception:
+                pass
 
-        if status_code in valid_codes:
-            status_codes_count[status_code] += 1
-            total_size += file_size
+            if line_count % 10 == 0:
+                display_stats(log_stats, total_size)
 
-        line_count += 1
+        display_stats(log_stats, total_size)
 
-        if line_count % 10 == 0:
-            print_statistics()
-
-    except Exception:
-        continue
-
-print_statistics()
+    except KeyboardInterrupt:
+        display_stats(log_stats, total_size)
+        raise
