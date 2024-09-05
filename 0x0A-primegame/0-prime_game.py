@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-
+""" THE PRIME GAME"""
 
 def sieve_of_eratosthenes(n):
     """ func to find all primes up to n using Sieve of Eratosthenes """
